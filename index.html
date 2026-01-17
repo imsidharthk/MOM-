@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body>
+<div class="container mt-4">
+
+  <!-- TOP TABS -->
+  <div class="mb-4 d-flex justify-content-center gap-2">
+    <button class="btn btn-primary me-2 active" id="btn1" onclick="openTab(1)">New Meeting</button>
+    <button class="btn btn-outline-primary me-2" id="btn2" onclick="openTab(2)">New Result</button>
+    <button class="btn btn-outline-primary me-2" id="btn3" onclick="openTab(3)">New Action Point</button>
+    <button class="btn btn-outline-primary" id="btn4" onclick="openTab(4)">Update on Action Point</button>
+  </div>
+
+  <!-- TAB 1 : NEW MEETING -->
+  <div id="tab1">
+    <div class="border rounded p-4 bg-light">
+      <h5 class="mb-3">New Meeting</h5>
+
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Name of Meeting</label>
+          <input type="text" id="meetingName" class="form-control border-dark" placeholder="e.g. Weekly Review">
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Department</label>
+          <input type="text" id="department" class="form-control border-dark" placeholder="e.g. Sales / HR / Operations">
+        </div>
+
+        <div class="col-md-12">
+          <label class="form-label">List of Participants (Multi-select)</label>
+          <select id="participants" class="form-select" multiple size="6"></select>
+          <div class="form-text">Ctrl (Windows) / Cmd (Mac) press karke multiple select karo</div>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Frequency of Meeting</label>
+          <select id="frequency" class="form-select"></select>
+        </div>
+
+        <div class="col-12">
+          <button class="btn btn-success" type="button" onclick="submitMeeting()">Submit</button>
+          <span id="msg1" class="ms-3"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2 : NEW RESULT -->
+  <div id="tab2" class="d-none">
+    <div class="border rounded p-4 bg-light">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h5 class="mb-0">New Result</h5>
+        <button class="btn btn-outline-secondary btn-sm" type="button" onclick="addResultBlock()">
+          + Add another meeting result
+        </button>
+      </div>
+
+      <div class="small text-muted mb-3">
+        <b>Description:</b> Result hamesha <b>past tense</b> me ho (as if achieved), <b>time bound</b>, positive tone, and gratitude to universe.
+        <br>
+        Example: “We are thankful to the universe that the company has achieved 4X profit by 31/12/2026”
+      </div>
+
+      <div id="resultsContainer"></div>
+
+      <div class="mt-3">
+        <button class="btn btn-success" type="button" onclick="submitAllResults()">Submit All Results</button>
+        <span id="msg2" class="ms-3"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3 : NEW ACTION POINT (as per latest requirement) -->
+  <div id="tab3" class="d-none">
+    <div class="border rounded p-4 bg-light">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h5 class="mb-0">New Action Point</h5>
+        <button class="btn btn-outline-secondary btn-sm" type="button" onclick="addActionPointBlock()">
+          + Add another action point
+        </button>
+      </div>
+
+      <div class="small text-muted mb-3">
+        Note: Each action point should include <b>What, When, How, Who</b>.<br>
+        Example: <i>Nitesh bhai (who) needs to get vendor registration of Tata Steel (what) in their portal (how) done by 31/12/2025 (when)</i>
+      </div>
+
+      <div id="apContainer"></div>
+
+      <div class="mt-3">
+        <button class="btn btn-success" type="button" onclick="submitAllActionPoints()">Submit All Action Points</button>
+        <span id="msg3" class="ms-3"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 4 : Placeholder -->
+  <div id="tab4" class="d-none">
+  <div class="border rounded p-4 bg-light">
+    <h5 class="mb-3">Update on Action Point</h5>
+
+    <div class="row g-3">
+
+      <div class="col-md-6">
+        <label class="form-label">Select Meeting name</label>
+        <select id="upMeeting" class="form-select" onchange="upPopulateResultShort()">
+          <option value="">Loading...</option>
+        </select>
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label">Select Result Short</label>
+        <select id="upResultShort" class="form-select" onchange="upPopulateActions()">
+          <option value="">Select meeting first</option>
+        </select>
+      </div>
+
+      <div class="col-md-12">
+        <label class="form-label">Select Action point (Pending/Blank only)</label>
+        <select id="upActionKey" class="form-select" onchange="upOnActionSelected()">
+          <option value="">Select meeting + result short first</option>
+        </select>
+        <div class="form-text" id="upMeta"></div>
+      </div>
+
+      <div class="col-md-4">
+        <label class="form-label">Status</label>
+        <select id="upStatus" class="form-select">
+          <option value="">Select Status</option>
+          <option>Done</option>
+          <option>WIP</option>
+          <option>Cancelled</option>
+          <option>On Hold</option>
+          <option>Not Done</option>
+        </select>
+      </div>
+
+      <div class="col-md-8">
+        <label class="form-label">Remarks (optional)</label>
+        <input id="upRemarks" type="text" class="form-control" placeholder="Optional remarks...">
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label">Next Target date (only for Task type = One off)</label>
+        <input id="upNextTarget" type="date" class="form-control">
+        <div class="form-text">Mandatory if Task type is "One off" AND current Target Date is today/past.</div>
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label">Next Follow up date (optional)</label>
+        <input id="upNextFollowUp" type="date" class="form-control">
+        <div class="form-text">If entered, it will update Start date column.</div>
+      </div>
+
+      <div class="col-12">
+        <button class="btn btn-success" type="button" onclick="submitUpdateAction()">Submit Update</button>
+        <span id="msg4" class="ms-3"></span>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+</div>
+
+<!-- Follower search datalist -->
+<datalist id="teamMembersDatalist"></datalist>
+
+<script>
+  /* ---------- COMMON ---------- */
+  function openTab(tab) {
+    for (let i = 1; i <= 4; i++) {
+      document.getElementById("tab"+i).classList.add("d-none");
+      document.getElementById("btn"+i).classList.remove("btn-primary","active");
+      document.getElementById("btn"+i).classList.add("btn-outline-primary");
+    }
+    document.getElementById("tab"+tab).classList.remove("d-none");
+    document.getElementById("btn"+tab).classList.remove("btn-outline-primary");
+    document.getElementById("btn"+tab).classList.add("btn-primary","active");
+  }
+
+  function setMsg(elId, text, ok=true) {
+    const el = document.getElementById(elId);
+    el.textContent = text;
+    el.className = ok ? "text-success ms-3" : "text-danger ms-3";
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  /* ---------- LOAD TAB 1 DROPDOWNS ---------- */
+  window.addEventListener("load", () => {
+    loadTeamMembers();
+    loadFrequencies();
+
+    initTab2();
+    initTab3();
+    initTab4();
+  });
+
+  function loadTeamMembers() {
+    google.script.run.withSuccessHandler(list => {
+      // Tab 1 participants multi-select
+      const sel = document.getElementById("participants");
+      sel.innerHTML = (list || []).map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join("");
+
+      // Tab 3 follower datalist
+      const dl = document.getElementById("teamMembersDatalist");
+      if (dl) {
+        dl.innerHTML = (list || []).map(n => `<option value="${escapeHtml(n)}"></option>`).join("");
+      }
+    }).getTeamMemberNames();
+  }
+
+  function loadFrequencies() {
+    google.script.run.withSuccessHandler(list => {
+      const sel = document.getElementById("frequency");
+      sel.innerHTML = `<option value="">Select Frequency</option>` +
+        (list || []).map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join("");
+    }).getFrequencies();
+  }
+
+  /* ---------- TAB 1 SUBMIT ---------- */
+  function submitMeeting() {
+    const payload = {
+      meetingName: document.getElementById("meetingName").value.trim(),
+      department: document.getElementById("department").value.trim(),
+      frequency: document.getElementById("frequency").value.trim(),
+      participants: Array.from(document.getElementById("participants").selectedOptions).map(o => o.value)
+    };
+
+    google.script.run.withSuccessHandler(res => {
+      if (!res.ok) return setMsg("msg1", res.message, false);
+      setMsg("msg1", res.message, true);
+
+      document.getElementById("meetingName").value = "";
+      document.getElementById("department").value = "";
+      document.getElementById("frequency").value = "";
+      Array.from(document.getElementById("participants").options).forEach(o => o.selected = false);
+    }).submitNewMeeting(payload);
+  }
+
+  /* =========================
+     TAB 2: NEW RESULT
+     ========================= */
+  let meetingNamesCache2 = [];
+  let nextResultNo = null;
+
+  function initTab2() {
+    google.script.run.withSuccessHandler(list => {
+      meetingNamesCache2 = list || [];
+      google.script.run.withSuccessHandler(res => {
+        if (!res?.ok) {
+          setMsg("msg2", res?.message || "Failed to read ResultNo.", false);
+          return;
+        }
+        nextResultNo = res.next;
+        document.getElementById("resultsContainer").innerHTML = "";
+        addResultBlock(true);
+      }).getNextResultNo();
+    }).getMeetingNames();
+  }
+
+  function addResultBlock(isFirst=false) {
+    if (nextResultNo === null) {
+      setMsg("msg2", 'ResultNo not loaded. Check named range "ResultNo".', false);
+      return;
+    }
+
+    const container = document.getElementById("resultsContainer");
+    const blockId = "resultBlock_" + nextResultNo;
+
+    const meetingOptions = [`<option value="">Select Meeting Name</option>`]
+      .concat(meetingNamesCache2.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`))
+      .join("");
+
+    const html = `
+      <div class="border rounded bg-white p-3 mb-3" id="${blockId}">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div>
+            <span class="badge text-bg-dark">Result No: <span class="resultNo">${nextResultNo}</span></span>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-danger ${isFirst ? "d-none" : ""}"
+            onclick="removeResultBlock('${blockId}')">Remove</button>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Select Meeting Name</label>
+            <select class="form-select meetingName">
+              ${meetingOptions}
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Target Date</label>
+            <input type="date" class="form-control targetDate">
+            <div class="form-text">Will be saved as dd/MM/yyyy</div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Result Short (2–4 words)</label>
+            <input type="text" class="form-control resultShort" placeholder="e.g. Profit 4X Achieved">
+            <div class="form-text">Only 2 to 4 words allowed.</div>
+          </div>
+
+          <div class="col-md-12">
+            <label class="form-label">Result Long</label>
+            <textarea class="form-control resultLong" rows="3"
+              placeholder="We are thankful to the universe that ..."></textarea>
+          </div>
+        </div>
+      </div>
+    `;
+
+    container.insertAdjacentHTML("beforeend", html);
+    nextResultNo += 1;
+    setMsg("msg2", "", true);
+  }
+
+  function removeResultBlock(blockId) {
+    const el = document.getElementById(blockId);
+    if (el) el.remove();
+  }
+
+  function validateShortWords(text) {
+    const words = text.trim().split(/\s+/).filter(Boolean);
+    return words.length >= 2 && words.length <= 4;
+  }
+
+  function submitAllResults() {
+    const blocks = Array.from(document.querySelectorAll("#resultsContainer > div"));
+    if (blocks.length === 0) return setMsg("msg2", "Please add at least one result.", false);
+
+    const rows = [];
+    for (let i = 0; i < blocks.length; i++) {
+      const b = blocks[i];
+
+      const resultNo = Number(b.querySelector(".resultNo").textContent.trim());
+      const meetingName = b.querySelector(".meetingName").value.trim();
+      const resultShort = b.querySelector(".resultShort").value.trim();
+      const resultLong  = b.querySelector(".resultLong").value.trim();
+      const targetDate  = b.querySelector(".targetDate").value.trim(); // yyyy-mm-dd
+
+      if (!meetingName) return setMsg("msg2", `Meeting Name required in block ${i+1}`, false);
+      if (!resultShort) return setMsg("msg2", `Result Short required in block ${i+1}`, false);
+      if (!validateShortWords(resultShort)) return setMsg("msg2", `Result Short must be 2–4 words (block ${i+1})`, false);
+      if (!resultLong) return setMsg("msg2", `Result Long required in block ${i+1}`, false);
+      if (!targetDate) return setMsg("msg2", `Target Date required in block ${i+1}`, false);
+
+      rows.push({ resultNo, meetingName, resultShort, resultLong, targetDate });
+    }
+
+    google.script.run.withSuccessHandler(res => {
+      if (!res?.ok) return setMsg("msg2", res?.message || "Failed to submit.", false);
+
+      setMsg("msg2", res.message, true);
+      initTab2();
+    }).submitMeetingResults({ rows });
+  }
+
+  /* =========================
+     TAB 3: NEW ACTION POINT (latest requirement)
+     ========================= */
+  let apMeetingNames = [];
+  let apResultMap = {};         // meeting -> [result shorts]
+  let teamMembersCache3 = [];   // names
+  let nextApBlockId = 1;        // only for UI blocks
+  let nextActionNo = null;
+
+  function initTab3() {
+  google.script.run.withSuccessHandler((res) => {
+    apMeetingNames = res?.meetingNames || [];
+    apResultMap = res?.resultShortByMeeting || {};
+
+    google.script.run.withSuccessHandler((names) => {
+      teamMembersCache3 = names || [];
+
+      google.script.run.withSuccessHandler((rno) => {
+        if (!rno?.ok) {
+          setMsg("msg3", rno?.message || 'Failed to read named range "VActionNo".', false);
+          return;
+        }
+        nextActionNo = rno.next;
+
+        document.getElementById("apContainer").innerHTML = "";
+        nextApBlockId = 1;
+        addActionPointBlock(true);
+      }).getNextActionNoV2();
+
+    }).getTeamMemberNames();
+
+  }).getMeetingResultsMap();
+}
+
+
+  function calcDefaultStartDate() {
+    const d = new Date();
+    const isSat = d.getDay() === 6; // Saturday
+    d.setDate(d.getDate() + (isSat ? 2 : 1));
+    return d.toISOString().slice(0,10); // yyyy-mm-dd
+  }
+
+  function ensureStartDateNotTodayAndDefault(val) {
+    if (!val) return calcDefaultStartDate();
+
+    const chosen = new Date(val);
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    chosen.setHours(0,0,0,0);
+
+    if (chosen.getTime() === today.getTime()) {
+      return calcDefaultStartDate();
+    }
+    return val;
+  }
+
+  function addActionPointBlock(isFirst=false) {
+  if (nextActionNo === null) {
+    setMsg("msg3", 'ActionNo not loaded. Check named range "VActionNo".', false);
+    return;
+  }
+
+  const blockNum = nextApBlockId++;
+  const actionNoForThisBlock = nextActionNo;     // ✅ assign
+  nextActionNo += 1;                             // ✅ increment for next block
+
+  const blockId = `apBlock_${blockNum}`;
+  const meetingOptions = [`<option value="">Select Meeting name</option>`]
+    .concat(apMeetingNames.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`))
+    .join("");
+
+  const startDefault = calcDefaultStartDate();
+
+  const html = `
+    <div class="border rounded bg-white p-3 mb-3" id="${blockId}">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="d-flex gap-2">
+          <span class="badge text-bg-dark">Box #${blockNum}</span>
+          <span class="badge text-bg-primary">ActionNo: <span class="apActionNo">${actionNoForThisBlock}</span></span>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-danger ${isFirst ? "d-none" : ""}"
+          onclick="removeApBlock('${blockId}')">Remove</button>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Select Meeting name</label>
+          <select class="form-select apMeeting" onchange="populateResultShort('${blockId}')">
+            ${meetingOptions}
+          </select>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Select Result Short (as per Meeting)</label>
+          <select class="form-select apResultShort">
+            <option value="">Select meeting first</option>
+          </select>
+        </div>
+
+        <div class="col-md-12">
+          <label class="form-label">Action point (Long Description)</label>
+          <textarea class="form-control apDesc" rows="3"
+            placeholder="Who needs to do What, How, by When..."></textarea>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Doer (Search + Multi-select)</label>
+          <input type="text" class="form-control apDoerSearch" placeholder="Type to search..." oninput="filterDoerList('${blockId}')">
+          <div class="border rounded p-2 mt-2 apDoerList" style="max-height: 160px; overflow:auto;"></div>
+          <div class="form-text">Select multiple doers in one click (checkbox).</div>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Follower (Search + Single select)</label>
+          <input class="form-control apFollower" list="teamMembersDatalist" placeholder="Type & select follower">
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Frequency</label>
+          <select class="form-select apFreq" id="apFreq_${blockId}">
+            <option value="">Select Frequency</option>
+          </select>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Task type</label>
+          <select class="form-select apTaskType">
+            <option value="">Select Task type</option>
+            <option>One off</option>
+            <option>Checklist</option>
+            <option>Delegation</option>
+            <option>Followup</option>
+          </select>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Urgency</label>
+          <select class="form-select apUrgency">
+            <option value="">Select Urgency</option>
+            <option>Very High</option>
+            <option>High</option>
+            <option>Medium</option>
+            <option>Low</option>
+          </select>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Start date</label>
+          <input type="date" class="form-control apStartDate" value="${startDefault}">
+          <div class="form-text">Default: Today + 1 (Saturday then +2). Cannot be today.</div>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Target Date (optional)</label>
+          <input type="date" class="form-control apTargetDate">
+        </div>
+
+        <div class="col-md-12">
+          <label class="form-label">Upload any document (optional)</label>
+          <input type="file" class="form-control apFile">
+          <div class="form-text">If uploaded, we will save Drive link in sheet.</div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById("apContainer").insertAdjacentHTML("beforeend", html);
+
+  renderDoerChecklist(blockId);
+
+  google.script.run.withSuccessHandler(list => {
+    const sel = document.getElementById(`apFreq_${blockId}`);
+    sel.innerHTML = `<option value="">Select Frequency</option>` + (list||[])
+      .map(f => `<option value="${escapeHtml(f)}">${escapeHtml(f)}</option>`).join("");
+  }).getFrequencies();
+}
+
+
+  function removeApBlock(blockId) {
+    const el = document.getElementById(blockId);
+    if (el) el.remove();
+  }
+
+  function populateResultShort(blockId) {
+    const block = document.getElementById(blockId);
+    const meeting = block.querySelector(".apMeeting").value.trim();
+    const rsSel = block.querySelector(".apResultShort");
+    const list = apResultMap[meeting] || [];
+    rsSel.innerHTML = `<option value="">Select Result Short</option>` + list
+      .map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join("");
+  }
+
+  function renderDoerChecklist(blockId) {
+    const block = document.getElementById(blockId);
+    const listDiv = block.querySelector(".apDoerList");
+
+    listDiv.innerHTML = (teamMembersCache3 || []).map((name, idx) => {
+      const safe = escapeHtml(name);
+      const id = `${blockId}_doer_${idx}`;
+      return `
+        <div class="form-check">
+          <input class="form-check-input apDoerChk" type="checkbox" value="${safe}" id="${id}">
+          <label class="form-check-label" for="${id}">${safe}</label>
+        </div>
+      `;
+    }).join("");
+  }
+
+  function filterDoerList(blockId) {
+    const block = document.getElementById(blockId);
+    const q = (block.querySelector(".apDoerSearch").value || "").toLowerCase();
+    const items = Array.from(block.querySelectorAll(".apDoerList .form-check"));
+    items.forEach(item => {
+      const text = item.innerText.toLowerCase();
+      item.style.display = text.includes(q) ? "" : "none";
+    });
+  }
+
+  // Upload helper (returns Promise<link or "">)
+  function uploadFileIfAny(fileInput) {
+    return new Promise((resolve, reject) => {
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) return resolve(""); // not mandatory
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result; // data:mime;base64,XXXX
+        const base64Data = String(dataUrl).split(",")[1] || "";
+
+        google.script.run.withSuccessHandler((res) => {
+          if (!res?.ok) return reject(res?.message || "Upload failed");
+          resolve(res.link || "");
+        }).uploadDocument({
+          fileName: file.name,
+          mimeType: file.type,
+          base64Data
+        });
+      };
+      reader.onerror = () => reject("File read failed");
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function submitAllActionPoints() {
+    try {
+      const blocks = Array.from(document.querySelectorAll("#apContainer > div"));
+      if (blocks.length === 0) return setMsg("msg3", "Please add at least one action point.", false);
+
+      const finalRows = [];
+
+      for (let i = 0; i < blocks.length; i++) {
+        const b = blocks[i];
+        // const actionNo = Number(b.querySelector(".apActionNo").textContent.trim());
+        const meetingName = b.querySelector(".apMeeting").value.trim();
+        const resultShort = b.querySelector(".apResultShort").value.trim();
+        const actionPoint = b.querySelector(".apDesc").value.trim();
+        const taskType = b.querySelector(".apTaskType").value.trim();
+        const follower = b.querySelector(".apFollower").value.trim();
+        const frequency = b.querySelector(".apFreq").value.trim();
+        const urgency = b.querySelector(".apUrgency").value.trim();
+
+        let startDate = (b.querySelector(".apStartDate").value || "").trim();
+        const targetDate = (b.querySelector(".apTargetDate").value || "").trim(); // optional
+        startDate = ensureStartDateNotTodayAndDefault(startDate);
+
+        const doers = Array.from(b.querySelectorAll(".apDoerChk:checked")).map(ch => ch.value);
+
+        // Validations
+        if (!meetingName) return setMsg("msg3", `Meeting name required (block ${i+1})`, false);
+        if (!resultShort) return setMsg("msg3", `Result Short required (block ${i+1})`, false);
+        if (!actionPoint) return setMsg("msg3", `Action point required (block ${i+1})`, false);
+        if (!doers.length) return setMsg("msg3", `Select at least one Doer (block ${i+1})`, false);
+        if (!follower) return setMsg("msg3", `Follower required (block ${i+1})`, false);
+        if (!frequency) return setMsg("msg3", `Frequency required (block ${i+1})`, false);
+        if (!taskType) return setMsg("msg3", `Task type required (block ${i+1})`, false);
+        if (!urgency) return setMsg("msg3", `Urgency required (block ${i+1})`, false);
+
+        // Upload file optional (one file per block)
+        setMsg("msg3", `Uploading/Preparing block ${i+1}...`, true);
+        const uploadLink = await uploadFileIfAny(b.querySelector(".apFile"));
+
+        const startOut = startDate ? startDate : "";
+        const targetOut = targetDate ? targetDate : "";
+
+        // Expand row per doer
+        doers.forEach(doer => {
+          finalRows.push([
+            nextActionNo,
+            meetingName,
+            resultShort,
+            actionPoint,
+            taskType,
+            doer,
+            follower,
+            frequency,
+            startOut,
+            targetOut,
+            urgency,
+            uploadLink
+          ]);
+        });
+      }
+
+      setMsg("msg3", `Submitting ${finalRows.length} row(s)...`, true);
+
+      google.script.run.withSuccessHandler((res) => {
+        if (!res?.ok) return setMsg("msg3", res?.message || "Submit failed", false);
+        setMsg("msg3", res.message, true);
+        initTab3();
+      }).submitActionPointsV2({ rows: finalRows });
+
+    } catch (err) {
+      setMsg("msg3", String(err), false);
+    }
+  }
+  /* =========================
+   TAB 4: UPDATE ACTION POINT
+   ========================= */
+let upMeetingNames = [];
+let upResultMap = {};      // meeting -> [resultShort]
+let upActionsMap = {};     // "meeting||resultShort" -> [{key,label,taskType,targetDateISO,...}]
+let upActionMetaByKey = {}; // key -> meta
+
+function initTab4() {
+  google.script.run
+    .withSuccessHandler((res) => {
+      upMeetingNames = res?.meetingNames || [];
+      upResultMap = res?.resultShortByMeeting || {};
+      upActionsMap = res?.actionsByMeetingResult || {};
+
+      // Build key->meta
+      upActionMetaByKey = {};
+      Object.keys(upActionsMap).forEach(k => {
+        (upActionsMap[k] || []).forEach(item => {
+          upActionMetaByKey[item.key] = item;
+        });
+      });
+
+      const meetSel = document.getElementById("upMeeting");
+      meetSel.innerHTML = `<option value="">Select Meeting</option>` +
+        upMeetingNames.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join("");
+
+      // reset others
+      document.getElementById("upResultShort").innerHTML = `<option value="">Select meeting first</option>`;
+      document.getElementById("upActionKey").innerHTML = `<option value="">Select meeting + result short first</option>`;
+      document.getElementById("upMeta").textContent = "";
+      document.getElementById("upStatus").value = "";
+      document.getElementById("upRemarks").value = "";
+      document.getElementById("upNextTarget").value = "";
+      document.getElementById("upNextFollowUp").value = "";
+
+      setMsg("msg4", "", true);
+    })
+    .withFailureHandler(err => setMsg("msg4", "SERVER ERROR: " + (err?.message || err), false))
+    .getPendingActionUpdateData();
+}
+
+function upPopulateResultShort() {
+  const meeting = document.getElementById("upMeeting").value.trim();
+  const rsSel = document.getElementById("upResultShort");
+  const list = upResultMap[meeting] || [];
+
+  rsSel.innerHTML = `<option value="">Select Result Short</option>` +
+    list.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join("");
+
+  // reset actions
+  document.getElementById("upActionKey").innerHTML = `<option value="">Select result short first</option>`;
+  document.getElementById("upMeta").textContent = "";
+}
+
+function upPopulateActions() {
+  const meeting = document.getElementById("upMeeting").value.trim();
+  const resultShort = document.getElementById("upResultShort").value.trim();
+  const key = meeting + "||" + resultShort;
+
+  const list = upActionsMap[key] || [];
+  const aSel = document.getElementById("upActionKey");
+
+  aSel.innerHTML = `<option value="">Select Action</option>` +
+    list.map(it => `<option value="${escapeHtml(it.key)}">${escapeHtml(it.label)}</option>`).join("");
+
+  document.getElementById("upMeta").textContent = "";
+}
+
+function upOnActionSelected() {
+  const key = document.getElementById("upActionKey").value.trim();
+  const meta = upActionMetaByKey[key];
+  if (!meta) {
+    document.getElementById("upMeta").textContent = "";
+    return;
+  }
+  document.getElementById("upMeta").textContent =
+    `Task type: ${meta.taskType || "-"} | Current Target Date: ${meta.targetDateISO || "-"}`;
+}
+
+function isTodayOrPast(iso) {
+  if (!iso) return false;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return false;
+
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  d.setHours(0,0,0,0);
+  return d.getTime() <= today.getTime();
+}
+
+function submitUpdateAction() {
+  const key = document.getElementById("upActionKey").value.trim();
+  const status = document.getElementById("upStatus").value.trim();
+  const remarks = document.getElementById("upRemarks").value.trim();
+  const nextTargetDate = document.getElementById("upNextTarget").value.trim();
+  const nextFollowUpDate = document.getElementById("upNextFollowUp").value.trim();
+
+  if (!key) return setMsg("msg4", "Please select an Action point.", false);
+  if (!status) return setMsg("msg4", "Please select Status.", false);
+
+  const meta = upActionMetaByKey[key];
+
+  // Mandatory rule:
+  // Next Target Date required if Task type = One off AND current Target Date is today/past
+  if ((meta?.taskType || "").toLowerCase() === "one off") {
+    if (isTodayOrPast(meta?.targetDateISO)) {
+      if (!nextTargetDate) {
+        return setMsg("msg4", 'Next Target date is mandatory because Task type is "One off" and current Target Date is today/past.', false);
+      }
+    }
+  }
+
+  setMsg("msg4", "Updating...", true);
+
+  google.script.run
+    .withSuccessHandler((res) => {
+      if (!res?.ok) return setMsg("msg4", res?.message || "Update failed", false);
+      setMsg("msg4", res.message, true);
+      initTab4(); // refresh pending lists
+    })
+    .withFailureHandler((err) => setMsg("msg4", "SERVER ERROR: " + (err?.message || err), false))
+    .updateActionPoint({ key, status, remarks, nextTargetDate, nextFollowUpDate });
+}
+
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
